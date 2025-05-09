@@ -1,7 +1,7 @@
 # Calculator MCP Server 🧮
 
 [![PyPI version](https://badge.fury.io/py/mcp-calculate-server.svg)](https://pypi.org/project/mcp-calculate-server/)
-[![License](https://img.shields.io/pypi/l/mcp-calculate-server.svg)](https://pypi.org/project/mcp-calculate-server/)
+[![License](https://img.shields.io/pypi/l/mcp-calculate-server.svg)](https://github.com/xiaoyingv/mcp_calculate_server/blob/main/LICENSE)
 [![Python Version](https://img.shields.io/pypi/pyversions/mcp-calculate-server.svg)](https://pypi.org/project/mcp-calculate-server/)
 
 基于 Python AST 的安全表达式计算器 MCP 服务，支持基础数学运算和错误防护机制。
