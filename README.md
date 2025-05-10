@@ -34,7 +34,6 @@ pip install mcp-calculate-server
       }
     }
   }
-}
 ```
 
 ## API 接口
