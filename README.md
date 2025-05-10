@@ -25,12 +25,16 @@ pip install mcp-calculate-server
 
 ## 快速使用
 
-```python
-from mcp.server.fastmcp import FastMCP
-
-# 启动计算器服务
-calculator = FastMCP("CalculatorServer")
-calculator.run(transport='stdio')
+```
+{
+  "mcpServers": {
+    "calculate_mcp": {
+      "command": "uvx",
+      "args": ["mcp_calculate_server"]
+      }
+    }
+  }
+}
 ```
 
 ## API 接口
