@@ -90,25 +90,3 @@ GitHub: https://github.com/xiaoyingv/mcp_calculate_server
 
 欢迎提交 PR 和报告 issue，提交前请阅读 [CONTRIBUTING.md]
 
-```
-请根据实际情况修改以下内容：
-1. 替换 GitHub 仓库地址和 PyPI 的 badge 链接
-2. 添加实际版本号（当前使用占位符）
-3. 补充测试说明或更多使用示例（如有）
-4. 如果需要，可添加 CI/CD 状态徽章
-
-```
-
-
-这个 README 包含：
-
-```
-- 清晰的功能列表和安全特性
-- 使用示例和错误处理说明
-- API 接口文档
-- 支持的操作符表格
-- 错误码说明
-- 安装和开发信息
-- 开源协议和贡献指引 
-```
-
