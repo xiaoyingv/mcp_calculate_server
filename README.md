@@ -88,5 +88,5 @@ GitHub: https://github.com/xiaoyingv/mcp_calculate_server
 
 ## 贡献指南
 
-欢迎提交 PR 和报告 issue，提交前请阅读 [CONTRIBUTING.md]
+欢迎提交 PR 和报告 issue，提交前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)
 
