@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+    <option name="sdkName" value="uv (mcp_calculate_server)" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv (mcp_calculate_server)" project-jdk-type="Python SDK" />
+</project>
