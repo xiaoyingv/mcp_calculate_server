@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mcp_calculate_server - 安全计算器MCP服务</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff6b6b; /* 清新红 */
+            --primary-dark: #e55c5c;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+            --accent-color: #4ecdc4; /* 青色作为点缀 */
+            --code-bg: #f4f4f4;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #fff9f9 0%, #f0f4ff 100%);
+            overflow-x: hidden;
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 布局 */
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 语言切换器 */
+        .lang-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .lang-btn {
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: var(--transition);
+        }
+
+        .lang-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 标题区 */
+        header {
+            text-align: center;
+            padding: 80px 20px 60px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+            animation: float 15s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+            transition: var(--transition);
+        }
+
+        .badge:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .badge a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* 主内容区 */
+        main {
+            padding: 60px 0;
+        }
+
+        section {
+            margin-bottom: 80px;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        li::before {
+            content: "✓";
+            color: var(--accent-color);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .warning li::before {
+            content: "⚠";
+            color: var(--primary-color);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+            margin: 20px 0;
+            transition: var(--transition);
+        }
+
+        pre:hover {
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+        }
+
+        /* 表格样式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        tr:hover {
+            background-color: #fff5f5;
+        }
+
+        /* 按钮 */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+            animation: pulse 2s infinite;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            animation: none;
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* 卡片区 */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        /* 页脚 */
+        footer {
+            background-color: var(--text-color);
+            color: white;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            .subtitle {
+                font-size: 1.2rem;
+            }
+            h2 {
+                font-size: 1.8rem;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            pre, code {
+                font-size: 0.85rem;
+            }
+            .lang-switcher {
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lang-switcher">
+        <button id="langToggle" class="lang-btn">EN</button>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <h1 data-i18n="title"><i class="fas fa-calculator"></i> mcp_calculate_server</h1>
+            <p class="subtitle" data-i18n="subtitle">基于 Python AST 的安全表达式计算器 MCP 服务</p>
+            <div class="badges">
+                <span class="badge"><a href="https://pypi.org/project/mcp-calculate-server/" target="_blank"><i class="fab fa-python"></i> <span data-i18n="badge_pypi">PyPI</span></a></span>
+                <span class="badge"><a href="https://github.com/xiaoyingv/mcp_calculate_server/blob/main/LICENSE" target="_blank"><i class="fas fa-balance-scale"></i> <span data-i18n="badge_license">MIT License</span></a></span>
+                <span class="badge"><a href="https://pypi.org/project/mcp-calculate-server/" target="_blank"><i class="fas fa-code"></i> <span data-i18n="badge_python">Python 3.13+</span></a></span>
+                <span class="badge"><a href="https://github.com/xiaoyingv/mcp_calculate_server" target="_blank"><i class="fab fa-github"></i> <span data-i18n="badge_github">GitHub</span></a></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section id="intro" class="animate-on-scroll">
+            <h2 data-i18n="section_intro_title">简介</h2>
+            <p data-i18n="section_intro_content">mcp_calculate_server 是一个轻量级、安全的计算器服务，它实现了 Model Context Protocol (MCP)。通过利用 Python 的抽象语法树 (AST) 进行表达式解析，它避免了使用危险的 <code>eval()</code> 函数，从而有效防止代码注入风险。它专注于提供基础的数学运算能力，并内置了完善的错误处理机制。</p>
+        </section>
+
+        <section id="features" class="animate-on-scroll">
+            <h2 data-i18n="section_features_title">核心功能</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-plus-square"></i>
+                        <i class="fas fa-minus-square"></i>
+                        <i class="fas fa-times"></i>
+                        <i class="fas fa-divide"></i>
+                    </div>
+                    <h3 data-i18n="feature_basic_ops_title">基础运算</h3>
+                    <p data-i18n="feature_basic_ops_content">支持加法、减法、乘法、除法四则运算，满足日常计算需求。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 data-i18n="feature_security_title">安全保障</h3>
+                    <p data-i18n="feature_security_content">基于 AST 解析，杜绝代码注入；内置除零、语法、类型等错误防护。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <h3 data-i18n="feature_mcp_title">MCP集成</h3>
+                    <p data-i18n="feature_mcp_content">作为标准 MCP 服务，可轻松集成到 Claude Desktop 等支持 MCP 的应用中。</p>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px;" data-i18n="section_features_detail_title">详细特性</h3>
+            <ul>
+                <li data-i18n="feature_list_1">✅ 支持加减乘除四则运算（<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>）</li>
+                <li data-i18n="feature_list_2">✅ 支持正负号处理（<code>+5</code>, <code>-3</code>）</li>
+                <li data-i18n="feature_list_3">✅ 自动格式化计算结果（保留两位小数）</li>
+            </ul>
+            <ul class="warning">
+                <li data-i18n="feature_list_4">⚠️ 拦截代码注入风险（通过 AST 解析而非 <code>eval</code>）</li>
+                <li data-i18n="feature_list_5">⚠️ 除零错误防护</li>
+                <li data-i18n="feature_list_6">⚠️ 语法错误提示</li>
+                <li data-i18n="feature_list_7">⚠️ 类型安全检查</li>
+            </ul>
+        </section>
+
+        <section id="install" class="animate-on-scroll">
+            <h2 data-i18n="section_install_title">快速安装</h2>
+            <p data-i18n="section_install_content">只需一行命令，即可安装并开始使用：</p>
+            <pre><code>pip install mcp-calculate-server</code></pre>
+        </section>
+
+        <section id="usage" class="animate-on-scroll">
+            <h2 data-i18n="section_usage_title">快速使用</h2>
+            <p data-i18n="section_usage_config">在您的 MCP 客户端配置（如 <code>claude_desktop_config.json</code>）中添加以下服务定义：</p>
+            <pre><code>{
+  "mcpServers": {
+    "calculate_mcp": {
+      "command": "uvx",
+      "args": ["mcp_calculate_server"]
+    }
+  }
+}</code></pre>
+            <p data-i18n="section_usage_code_alt">或者，您也可以直接通过 Python 代码启动服务：</p>
+            <!-- Python代码块容器 -->
+            <div id="python-code-container"></div>
+        </section>
+
+        <section id="api" class="animate-on-scroll">
+            <h2 data-i18n="section_api_title">API 接口</h2>
+            <h3><code>perform_calculation(expression: str) -> str</code></h3>
+            <p data-i18n="section_api_content">这是核心的计算接口。它接收一个字符串形式的数学表达式，并返回格式化的计算结果或错误信息。</p>
+            <h4 data-i18n="section_api_example_title">示例:</h4>
+            <!-- API示例代码块容器 -->
+            <div id="api-example-container"></div>
+        </section>
+
+        <section id="operators" class="animate-on-scroll">
+            <h2 data-i18n="section_operators_title">支持的运算符</h2>
+            <!-- 运算符表格容器 -->
+            <div id="operators-table-container"></div>
+        </section>
+
+        <section id="errors" class="animate-on-scroll">
+            <h2 data-i18n="section_errors_title">错误处理</h2>
+            <p data-i18n="section_errors_content">服务内置了多种错误处理机制，确保健壮性：</p>
+            <!-- 错误处理表格容器 -->
+            <div id="errors-table-container"></div>
+        </section>
+
+        <section id="links" class="animate-on-scroll">
+            <h2 data-i18n="section_links_title">资源链接</h2>
+            <ul>
+                <li><i class="fab fa-python"></i> <strong data-i18n="links_pypi">PyPI:</strong> <a href="https://pypi.org/project/mcp-calculate-server/" target="_blank">https://pypi.org/project/mcp-calculate-server/</a></li>
+                <li><i class="fab fa-github"></i> <strong data-i18n="links_source">源码:</strong> <a href="https://github.com/xiaoyingv/mcp_calculate_server" target="_blank">https://github.com/xiaoyingv/mcp_calculate_server</a></li>
+                <li><i class="fas fa-balance-scale"></i> <strong data-i18n="links_license">协议:</strong> <a href="https://github.com/xiaoyingv/mcp_calculate_server/blob/main/LICENSE" target="_blank">MIT License</a></li>
+            </ul>
+            <div class="btn-container">
+                <a href="https://github.com/xiaoyingv/mcp_calculate_server" class="btn" target="_blank"><i class="fab fa-github"></i> <span data-i18n="btn_github">访问 GitHub</span></a>
+                <a href="https://pypi.org/project/mcp-calculate-server/" class="btn btn-outline" target="_blank"><i class="fab fa-python"></i> <span data-i18n="btn_pypi">查看 PyPI</span></a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p id="footer-license-text"></p>
+            <p id="footer-contribute-text"></p>
+        </div>
+    </footer>
+
+    <script>
+        // 国际化内容
+        const translations = {
+            zh: {
+                title: "<i class='fas fa-calculator'></i> mcp_calculate_server",
+                subtitle: "基于 Python AST 的安全表达式计算器 MCP 服务",
+                badge_pypi: "PyPI",
+                badge_license: "MIT License",
+                badge_python: "Python 3.13+",
+                badge_github: "GitHub",
+                section_intro_title: "简介",
+                section_intro_content: "mcp_calculate_server 是一个轻量级、安全的计算器服务，它实现了 Model Context Protocol (MCP)。通过利用 Python 的抽象语法树 (AST) 进行表达式解析，它避免了使用危险的 <code>eval()</code> 函数，从而有效防止代码注入风险。它专注于提供基础的数学运算能力，并内置了完善的错误处理机制。",
+                section_features_title: "核心功能",
+                feature_basic_ops_title: "基础运算",
+                feature_basic_ops_content: "支持加法、减法、乘法、除法四则运算，满足日常计算需求。",
+                feature_security_title: "安全保障",
+                feature_security_content: "基于 AST 解析，杜绝代码注入；内置除零、语法、类型等错误防护。",
+                feature_mcp_title: "MCP集成",
+                feature_mcp_content: "作为标准 MCP 服务，可轻松集成到 Claude Desktop 等支持 MCP 的应用中。",
+                section_features_detail_title: "详细特性",
+                feature_list_1: "✅ 支持加减乘除四则运算（<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>）",
+                feature_list_2: "✅ 支持正负号处理（<code>+5</code>, <code>-3</code>）",
+                feature_list_3: "✅ 自动格式化计算结果（保留两位小数）",
+                feature_list_4: "⚠️ 拦截代码注入风险（通过 AST 解析而非 <code>eval</code>）",
+                feature_list_5: "⚠️ 除零错误防护",
+                feature_list_6: "⚠️ 语法错误提示",
+                feature_list_7: "⚠️ 类型安全检查",
+                section_install_title: "快速安装",
+                section_install_content: "只需一行命令，即可安装并开始使用：",
+                section_usage_title: "快速使用",
+                section_usage_config: "在您的 MCP 客户端配置（如 <code>claude_desktop_config.json</code>）中添加以下服务定义：",
+                section_usage_code_alt: "或者，您也可以直接通过 Python 代码启动服务：",
+                python_code: `<pre><code>from mcp.server.fastmcp import FastMCP
+
+# 启动计算器服务
+calculator = FastMCP("CalculatorServer")
+calculator.run(transport='stdio')</code></pre>`,
+                section_api_title: "API 接口",
+                section_api_content: "这是核心的计算接口。它接收一个字符串形式的数学表达式，并返回格式化的计算结果或错误信息。",
+                section_api_example_title: "示例:",
+                api_example: `<pre><code>>>> perform_calculation("5+3")
+"🧮 计算结果：5+3 = 8.00"
+
+>>> perform_calculation("10/0")
+"❌ 错误：除数不能为零"
+
+>>> perform_calculation("2**3")
+"❌ 不支持的运算符：Power"</code></pre>`,
+                section_operators_title: "支持的运算符",
+                // 运算符表格内容
+                operators_table: `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>操作符</th>
+                            <th>说明</th>
+                            <th>示例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>+</code></td>
+                            <td>加法</td>
+                            <td><code>3+4</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-</code></td>
+                            <td>减法</td>
+                            <td><code>5-2</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>*</code></td>
+                            <td>乘法</td>
+                            <td><code>6*7</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>/</code></td>
+                            <td>除法</td>
+                            <td><code>8/2</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-x</code></td>
+                            <td>取负</td>
+                            <td><code>-5</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>+x</code></td>
+                            <td>取正</td>
+                            <td><code>+3</code></td>
+                        </tr>
+                    </tbody>
+                </table>`,
+                section_errors_title: "错误处理",
+                section_errors_content: "服务内置了多种错误处理机制，确保健壮性：",
+                // 错误处理表格内容
+                errors_table: `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>错误类型</th>
+                            <th>示例输出</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>语法错误</td>
+                            <td><code>❌ 表达式语法错误：unexpected EOF</code></td>
+                        </tr>
+                        <tr>
+                            <td>不支持的运算符</td>
+                            <td><code>❌ 不支持的运算符：Mod</code></td>
+                        </tr>
+                        <tr>
+                            <td>除零错误</td>
+                            <td><code>❌ 错误：除数不能为零</code></td>
+                        </tr>
+                        <tr>
+                            <td>非法操作数类型</td>
+                            <td><code>TypeError: 不支持的常量类型</code></td>
+                        </tr>
+                    </tbody>
+                </table>`,
+                section_links_title: "资源链接",
+                links_pypi: "PyPI:",
+                links_source: "源码:",
+                links_license: "协议:",
+                btn_github: "访问 GitHub",
+                btn_pypi: "查看 PyPI",
+                // 页脚内容
+                footer_license: "&copy; 2025 mcp_calculate_server. 基于 <a href='https://github.com/xiaoyingv/mcp_calculate_server/blob/main/LICENSE' target='_blank'>MIT License</a> 开源.",
+                footer_contribute: "欢迎 <a href='https://github.com/xiaoyingv/mcp_calculate_server/issues' target='_blank'>提交 Issue</a> 和 <a href='https://github.com/xiaoyingv/mcp_calculate_server/pulls' target='_blank'>Pull Request</a> 贡献代码！",
+            },
+            en: {
+                title: "<i class='fas fa-calculator'></i> mcp_calculate_server",
+                subtitle: "A Secure Expression Calculator MCP Service Based on Python AST",
+                badge_pypi: "PyPI",
+                badge_license: "MIT License",
+                badge_python: "Python 3.13+",
+                badge_github: "GitHub",
+                section_intro_title: "Introduction",
+                section_intro_content: "mcp_calculate_server is a lightweight and secure calculator service that implements the Model Context Protocol (MCP). By using Python's Abstract Syntax Tree (AST) for expression parsing, it avoids the dangerous <code>eval()</code> function, effectively preventing code injection risks. It focuses on providing basic mathematical operations and has built-in comprehensive error handling mechanisms.",
+                section_features_title: "Core Features",
+                feature_basic_ops_title: "Basic Operations",
+                feature_basic_ops_content: "Supports addition, subtraction, multiplication, and division to meet daily calculation needs.",
+                feature_security_title: "Security Assurance",
+                feature_security_content: "Based on AST parsing to prevent code injection; built-in protection against division by zero, syntax, and type errors.",
+                feature_mcp_title: "MCP Integration",
+                feature_mcp_content: "As a standard MCP service, it can be easily integrated into applications that support MCP, such as Claude Desktop.",
+                section_features_detail_title: "Detailed Features",
+                feature_list_1: "✅ Supports basic arithmetic operations (+, -, *, /)",
+                feature_list_2: "✅ Handles positive and negative signs (+5, -3)",
+                feature_list_3: "✅ Automatically formats calculation results (keeps two decimal places)",
+                feature_list_4: "⚠️ Prevents code injection risks (via AST parsing instead of <code>eval</code>)",
+                feature_list_5: "⚠️ Division by zero protection",
+                feature_list_6: "⚠️ Syntax error prompts",
+                feature_list_7: "⚠️ Type safety checks",
+                section_install_title: "Quick Install",
+                section_install_content: "Install and start using with just one command:",
+                section_usage_title: "Quick Start",
+                section_usage_config: "Add the following service definition to your MCP client configuration (e.g., <code>claude_desktop_config.json</code>):",
+                section_usage_code_alt: "Alternatively, you can start the service directly via Python code:",
+                python_code: `<pre><code>from mcp.server.fastmcp import FastMCP
+
+# Start the calculator service
+calculator = FastMCP("CalculatorServer")
+calculator.run(transport='stdio')</code></pre>`,
+                section_api_title: "API Interface",
+                section_api_content: "This is the core calculation interface. It takes a string-formatted mathematical expression and returns a formatted result or error message.",
+                section_api_example_title: "Examples:",
+                api_example: `<pre><code>>>> perform_calculation("5+3")
+"🧮 Calculation result: 5+3 = 8.00"
+
+>>> perform_calculation("10/0")
+"❌ Error: Division by zero"
+
+>>> perform_calculation("2**3")
+"❌ Unsupported operator: Power"</code></pre>`,
+                section_operators_title: "Supported Operators",
+                // 运算符表格内容
+                operators_table: `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operator</th>
+                            <th>Description</th>
+                            <th>Example</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>+</code></td>
+                            <td>Addition</td>
+                            <td><code>3+4</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-</code></td>
+                            <td>Subtraction</td>
+                            <td><code>5-2</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>*</code></td>
+                            <td>Multiplication</td>
+                            <td><code>6*7</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>/</code></td>
+                            <td>Division</td>
+                            <td><code>8/2</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-x</code></td>
+                            <td>Negation</td>
+                            <td><code>-5</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>+x</code></td>
+                            <td>Positive</td>
+                            <td><code>+3</code></td>
+                        </tr>
+                    </tbody>
+                </table>`,
+                section_errors_title: "Error Handling",
+                section_errors_content: "The service has multiple built-in error handling mechanisms to ensure robustness:",
+                // 错误处理表格内容
+                errors_table: `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Error Type</th>
+                            <th>Example Output</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Syntax Error</td>
+                            <td><code>❌ Expression syntax error: unexpected EOF</code></td>
+                        </tr>
+                        <tr>
+                            <td>Unsupported Operator</td>
+                            <td><code>❌ Unsupported operator: Mod</code></td>
+                        </tr>
+                        <tr>
+                            <td>Division by Zero Error</td>
+                            <td><code>❌ Error: Division by zero</code></td>
+                        </tr>
+                        <tr>
+                            <td>Invalid Operand Type</td>
+                            <td><code>TypeError: Unsupported constant type</code></td>
+                        </tr>
+                    </tbody>
+                </table>`,
+                section_links_title: "Resources",
+                links_pypi: "PyPI:",
+                links_source: "Source:",
+                links_license: "License:",
+                btn_github: "Visit GitHub",
+                btn_pypi: "View PyPI",
+                // 页脚内容
+                footer_license: "&copy; 2025 mcp_calculate_server. Based on <a href='https://github.com/xiaoyingv/mcp_calculate_server/blob/main/LICENSE' target='_blank'>MIT License</a> open source.",
+                footer_contribute: "Welcome to <a href='https://github.com/xiaoyingv/mcp_calculate_server/issues' target='_blank'>submit Issues</a> and <a href='https://github.com/xiaoyingv/mcp_calculate_server/pulls' target='_blank'>Pull Requests</a> to contribute code!",
+            }
+        };
+
+        // 切换语言的函数
+        function changeLanguage(lang) {
+            const currentLang = document.documentElement.lang;
+            if (currentLang === lang) return; // 如果语言没变，则不执行
+
+            document.documentElement.lang = lang;
+            
+            if (lang === 'en') {
+                document.title = 'mcp_calculate_server - Secure Calculator MCP Service';
+                document.getElementById('langToggle').textContent = '中文';
+            } else {
+                document.title = 'mcp_calculate_server - 安全计算器MCP服务';
+                document.getElementById('langToggle').textContent = 'EN';
+            }
+
+            // 更新所有带有 data-i18n 属性的元素
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                        element.placeholder = translations[lang][key];
+                    } else {
+                        element.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+
+            // 特殊处理代码块、表格和页脚内容
+            document.getElementById('python-code-container').innerHTML = translations[lang].python_code;
+            document.getElementById('api-example-container').innerHTML = translations[lang].api_example;
+            document.getElementById('operators-table-container').innerHTML = translations[lang].operators_table;
+            document.getElementById('errors-table-container').innerHTML = translations[lang].errors_table;
+            document.getElementById('footer-license-text').innerHTML = translations[lang].footer_license;
+            document.getElementById('footer-contribute-text').innerHTML = translations[lang].footer_contribute;
+        }
+
+        // 页面加载完成后绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+
+            // 为标题添加浮动动画延迟
+            const headerElements = document.querySelectorAll('header .header-content > *');
+            headerElements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.2}s`;
+            });
+
+            // 绑定语言切换按钮事件
+            document.getElementById('langToggle').addEventListener('click', function() {
+                const currentLang = document.documentElement.lang;
+                if (currentLang === 'zh-CN' || currentLang === 'zh') {
+                    changeLanguage('en');
+                } else {
+                    changeLanguage('zh');
+                }
+            });
+
+            // 初始化页面内容（加载中文）
+            changeLanguage('zh');
+        });
+    </script>
+
+</body>
+</html>
